@@ -14,7 +14,7 @@ html, body {
 
 .sugg-bar {
     width: 100%;
-    height: 40px;
+    height: 15%;
     text-align: center;
 }
 
@@ -27,27 +27,39 @@ html, body {
     padding-bottom: 10px;
     width: 30%;
     height: 100%;
+    font-size: 14pt;
+
+}
+
+#next-word {
+    color: grey;
 }
 
 #typebox {
-    height: 50%;
+    height: 20%;
+    font-size: 16pt;
     width: 100%;
+}
+
+.next-type {
+    margin-top: 10px;
 }
 </style>
 </head>
 <body>
 <textarea id="typebox"></textarea>
 <div class="sugg-bar">
-    <div class="sugg-box" id="sugg-1">dev</div>
-    <div class="sugg-box" id="sugg-2">dev</div>
-    <div class="sugg-box" id="sugg-3">dev</div>
-</div>
+    <div class="sugg-box" id="sugg-1"></div>
+    <div class="sugg-box" id="sugg-2"></div>
+    <div class="sugg-box" id="sugg-3"></div>
+</div><br>
 <div class="next-type">
-    Type: <span id="the-word"></span>
+    Type: <span id="the-word"></span> <span id="next-word"></span>
 </div>
 </body>
 <script>
 var tokens = ["geese", "are", "large", "waterfowl", "of", "the", "family", "anatidae", "this", "group", "comprises", "the", "genera", "anser", "the", "grey", "geese", "and", "branta", "the", "black", "geese", "chen", "a", "genus", "comprising", "white", "geese", "is", "sometimes", "used", "to", "refer", "to", "a", "group", "of", "species", "that", "are", "more", "commonly", "placed", "within", "anser", "some", "other", "birds", "mostly", "related", "to", "the", "shelducks", "have", "goose", "as", "part", "of", "their", "names"]
+// var tokens = ["geese", "are"];
 
 var vocab = ["comprising", "is", "this", "goose", "their", "are", "as", "and", "to", "related", "part", "a", "names", "waterfowl", "large", "mostly", "shelducks", "have", "more", "other", "placed", "some", "that", "birds", "species", "genera", "comprises", "grey", "used", "anatidae", "geese", "refer", "family", "commonly", "white", "anser", "group", "black", "within", "genus", "branta", "of", "sometimes", "chen", "the"]
 
@@ -65,21 +77,122 @@ function choose(choices) {
 }
 
 function sampleWord(idx, sampleType) {
+    if (sampleType == "none")
+        return "";
     if (sampleType == "random")
         return choose(vocab);
     var sampleDist = sampleType == "len" ? lengthSample : freqSample;
     var correctWord = tokens[idx];
+    if (correctMask.length > idx && correctMask[idx]) {
+        return sampleWord(idx, "random");
+    }
     if (Math.random() < sampleDist[correctWord])
         return correctWord;
     return sampleWord(idx, "random");
 }
 
-let i = 0;
-for (i = 0; i < 10; ++i) {
-    console.log(sampleWord(i, "len"));
+function showSuggestions() {
+    document.getElementById("sugg-1").innerHTML = samples1[wordIdx];
+    document.getElementById("sugg-2").innerHTML = samples2[wordIdx];
+    document.getElementById("sugg-3").innerHTML = samples3[wordIdx];
+}
+
+var samples1 = [];
+var samples2 = [];
+var samples3 = [];
+var correctMask = [];
+var queryDict = {}
+location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+
+for (var i in tokens) {
+    samples1.push(sampleWord(i, queryDict["exp_type"]));
+    correctMask.push(samples1[i] == tokens[i]);
+}
+
+for (var i in tokens) {
+    samples2.push(sampleWord(i, queryDict["exp_type"]));
+    correctMask[i] = correctMask[i] || (samples2[i] == tokens[i]);
+}
+
+for (var i in tokens) {
+    samples3.push(sampleWord(i, queryDict["exp_type"]));
+    correctMask[i] = correctMask[i] || (samples3[i] == tokens[i]);
 }
 
 let wordIdx = 0;
+var theWord = document.getElementById("the-word");
+var nextWord = document.getElementById("next-word");
+
+var sugg1 = document.getElementById("sugg-1");
+var sugg2 = document.getElementById("sugg-2");
+var sugg3 = document.getElementById("sugg-3");
+
+var sbjId = queryDict["sbj_id"];
+var expType = queryDict["exp_type"];
+
+window.lastA = 0;
+window.enabled = true;
+
+showSuggestions();
+
+theWord.innerHTML = tokens[wordIdx];
+nextWord.innerHTML = tokens.slice(wordIdx + 1, tokens.length).join(" ");
+
+var textArea = document.getElementById("typebox");
+
+function triggerCorrect(typeahead) {
+    wordIdx += 1;
+    var oldWord = typeahead ? theWord.innerHTML : textArea.value;
+    textArea.value = "";
+    if (wordIdx < tokens.length)
+        theWord.innerHTML = tokens[wordIdx];
+    else
+        theWord.innerHTML = "";
+    if (wordIdx < tokens.length) {
+        nextWord.innerHTML = tokens.slice(wordIdx + 1, tokens.length).join(" ");
+    } else {
+        nextWord.innerHTML = "";
+    }
+    showSuggestions();
+    if (wordIdx != 1 && window.enabled) {
+        var b = new Date().getTime();
+        fetch("/?sbj_id=" + sbjId + "&exp_type=" + expType + "&duration=" + (b - window.lastA) + "&word=" + oldWord + "&typeahead=" + typeahead);
+        window.lastA = b;
+    } else {
+        window.lastA = new Date().getTime();
+    }
+    theWord.style.color = "black";
+    if (wordIdx == tokens.length) {
+        alert("Congrats, your winner!");
+        window.enabled = false;
+        return;
+    }
+}
+
+function suggFunc(event) {
+    if (this.innerHTML == theWord.innerHTML) {
+        triggerCorrect(true);
+    } else
+        textArea.value = this.innerHTML;
+    event.preventDefault();
+    event.stopPropagation();
+    setTimeout(function () { textArea.focus(); }, 2);
+}
+
+sugg1.addEventListener('click', suggFunc);
+sugg2.addEventListener('click', suggFunc);
+sugg3.addEventListener('click', suggFunc);
+
+textArea.addEventListener('keyup', (event) => {
+    const keyName = event.key;
+    if (textArea.value.toLowerCase() == theWord.innerHTML) {
+        triggerCorrect(false);
+        event.preventDefault()
+    }
+    if (keyName == " ") {
+        theWord.style.color = "red";
+    }
+});
 
 // >>> ((1 - np.clip(lens * 0.06075, 0, 1))**3).mean()
 // 0.4009919976015626

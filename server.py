@@ -4,15 +4,18 @@ import cherrypy
 class Root(object):
 
     @cherrypy.expose
-    def index(self):
+    def index(self, **kwargs):
         with open("html/index.html") as f:
-            return f.read()
-        return "Error"
-
-    @cherrypy.expose
-    def log_word(self, sbj_id, exp_type, duration, word, typeahead):
-        with open("log_file", "a") as f:
-            f.write(",".join(map(str, (sbj_id, exp_type, duration, word, typeahead))))
+            content = f.read()
+        if "word" in kwargs:
+            sbj_id = kwargs["sbj_id"]
+            exp_type = kwargs["exp_type"]
+            duration = kwargs["duration"]
+            word = kwargs["word"]
+            typeahead = kwargs["typeahead"]
+            with open("{}_{}_log.csv".format(exp_type, sbj_id), "a") as f:
+                f.write(",".join(map(str, (sbj_id, exp_type, duration, word, typeahead))) + "\n")
+        return content
 
 
 def main():
