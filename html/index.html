@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>HCI Experiment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+    height: 100%;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    font-family: Arial;
+}
+
+.sugg-bar {
+    width: 100%;
+    height: 40px;
+    text-align: center;
+}
+
+.sugg-box {
+    border: 1px solid grey;
+    display: inline-block;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 15px;
+    padding-bottom: 10px;
+    width: 30%;
+    height: 100%;
+}
+
+#typebox {
+    height: 50%;
+    width: 100%;
+}
+</style>
+</head>
+<body>
+<textarea id="typebox"></textarea>
+<div class="sugg-bar">
+    <div class="sugg-box" id="sugg-1">dev</div>
+    <div class="sugg-box" id="sugg-2">dev</div>
+    <div class="sugg-box" id="sugg-3">dev</div>
+</div>
+<div class="next-type">
+    Type: <span id="the-word"></span>
+</div>
+</body>
+<script>
+var tokens = ["geese", "are", "large", "waterfowl", "of", "the", "family", "anatidae", "this", "group", "comprises", "the", "genera", "anser", "the", "grey", "geese", "and", "branta", "the", "black", "geese", "chen", "a", "genus", "comprising", "white", "geese", "is", "sometimes", "used", "to", "refer", "to", "a", "group", "of", "species", "that", "are", "more", "commonly", "placed", "within", "anser", "some", "other", "birds", "mostly", "related", "to", "the", "shelducks", "have", "goose", "as", "part", "of", "their", "names"]
+
+var vocab = ["comprising", "is", "this", "goose", "their", "are", "as", "and", "to", "related", "part", "a", "names", "waterfowl", "large", "mostly", "shelducks", "have", "more", "other", "placed", "some", "that", "birds", "species", "genera", "comprises", "grey", "used", "anatidae", "geese", "refer", "family", "commonly", "white", "anser", "group", "black", "within", "genus", "branta", "of", "sometimes", "chen", "the"]
+
+var randomSample = {'comprising': 0.022222222222222223, 'is': 0.022222222222222223, 'this': 0.022222222222222223, 'goose': 0.022222222222222223, 'their': 0.022222222222222223, 'are': 0.022222222222222223, 'as': 0.022222222222222223, 'and': 0.022222222222222223, 'to': 0.022222222222222223, 'related': 0.022222222222222223, 'part': 0.022222222222222223, 'a': 0.022222222222222223, 'names': 0.022222222222222223, 'waterfowl': 0.022222222222222223, 'large': 0.022222222222222223, 'mostly': 0.022222222222222223, 'shelducks': 0.022222222222222223, 'have': 0.022222222222222223, 'more': 0.022222222222222223, 'other': 0.022222222222222223, 'placed': 0.022222222222222223, 'some': 0.022222222222222223, 'that': 0.022222222222222223, 'birds': 0.022222222222222223, 'species': 0.022222222222222223, 'genera': 0.022222222222222223, 'comprises': 0.022222222222222223, 'grey': 0.022222222222222223, 'used': 0.022222222222222223, 'anatidae': 0.022222222222222223, 'geese': 0.022222222222222223, 'refer': 0.022222222222222223, 'family': 0.022222222222222223, 'commonly': 0.022222222222222223, 'white': 0.022222222222222223, 'anser': 0.022222222222222223, 'group': 0.022222222222222223, 'black': 0.022222222222222223, 'within': 0.022222222222222223, 'genus': 0.022222222222222223, 'branta': 0.022222222222222223, 'of': 0.022222222222222223, 'sometimes': 0.022222222222222223, 'chen': 0.022222222222222223, 'the': 0.022222222222222223}
+
+var lengthSample = {'geese': 0.3242298567374695, 'are': 0.15068842025849233, 'large': 0.3242298567374695, 'waterfowl': 0.783, 'of': 0.08202438661763953, 'the': 0.15068842025849233, 'family': 0.426211215244273, 'anatidae': 0.6561950929411162, 'this': 0.232, 'group': 0.3242298567374695, 'comprises': 0.783, 'genera': 0.426211215244273, 'anser': 0.3242298567374695, 'grey': 0.232, 'and': 0.15068842025849233, 'branta': 0.426211215244273, 'black': 0.3242298567374695, 'chen': 0.232, 'a': 0.029, 'genus': 0.3242298567374695, 'comprising': 0.91706052144883, 'white': 0.3242298567374695, 'is': 0.08202438661763953, 'sometimes': 0.783, 'used': 0.232, 'to': 0.08202438661763953, 'refer': 0.3242298567374695, 'species': 0.5370875161461119, 'that': 0.232, 'more': 0.232, 'commonly': 0.6561950929411162, 'placed': 0.426211215244273, 'within': 0.426211215244273, 'some': 0.232, 'other': 0.3242298567374695, 'birds': 0.3242298567374695, 'mostly': 0.426211215244273, 'related': 0.5370875161461119, 'shelducks': 0.783, 'have': 0.232, 'goose': 0.3242298567374695, 'as': 0.08202438661763953, 'part': 0.232, 'their': 0.3242298567374695, 'names': 0.3242298567374695}
+
+var freqSample = {'geese': 0.6018, 'are': 0.177, 'large': 0.3009, 'waterfowl': 0.6903, 'of': 0.0177, 'the': 0.0, 'family': 0.354, 'anatidae': 0.6903, 'this': 0.1593, 'group': 0.4425, 'comprises': 0.6549, 'genera': 0.6195, 'anser': 0.6903, 'grey': 0.5133, 'and': 0.0354, 'branta': 0.6903, 'black': 0.37170000000000003, 'chen': 0.6903, 'a': 0.0708, 'genus': 0.5841000000000001, 'comprising': 0.6372, 'white': 0.3363, 'is': 0.1062, 'sometimes': 0.3894, 'used': 0.2832, 'to': 0.0531, 'refer': 0.5664, 'species': 0.4779, 'that': 0.0885, 'more': 0.2124, 'commonly': 0.531, 'placed': 0.4071, 'within': 0.3186, 'some': 0.24780000000000002, 'other': 0.2301, 'birds': 0.4602, 'mostly': 0.5487, 'related': 0.49560000000000004, 'shelducks': 0.6903, 'have': 0.1416, 'goose': 0.6726, 'as': 0.12390000000000001, 'part': 0.2655, 'their': 0.1947, 'names': 0.4248}
+
+var freqs = [12344, 37, 320, 100000, 2, 1, 500, 100000, 29, 1694, 25225, 1, 16573, 100000, 1, 2917, 12344, 3, 100000, 1, 530, 12344, 100000, 5, 7456, 19580, 365, 12344, 13, 571, 312, 4, 4892, 4, 5, 1694, 2, 1732, 7, 37, 56, 3499, 721, 323, 100000, 72, 71, 1709, 4018, 2602, 4, 1, 100000, 26, 45383, 16, 187, 2, 40, 1283]
+
+function choose(choices) {
+    var index = Math.floor(Math.random() * choices.length);
+    return choices[index];
+}
+
+function sampleWord(idx, sampleType) {
+    if (sampleType == "random")
+        return choose(vocab);
+    var sampleDist = sampleType == "len" ? lengthSample : freqSample;
+    var correctWord = tokens[idx];
+    if (Math.random() < sampleDist[correctWord])
+        return correctWord;
+    return sampleWord(idx, "random");
+}
+
+let i = 0;
+for (i = 0; i < 10; ++i) {
+    console.log(sampleWord(i, "len"));
+}
+
+let wordIdx = 0;
+
+// >>> ((1 - np.clip(lens * 0.06075, 0, 1))**3).mean()
+// 0.4009919976015626
+// >>> ((1 - np.clip(freqs_ * 0.0177, 0, 1))**3).mean()
+// 0.4001257232459501
+
+</script>
+</html>
